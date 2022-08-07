@@ -1,0 +1,30 @@
+.DS_Store
+.idea/shelf
+/dependencies/repo
+/dist
+/local
+/gh-pages
+/ideaSDK
+out/
+/tmp
+/intellij
+workspace.xml
+*.versionsBackup
+.gradle/
+build/
+!**/src/**/build
+!**/test/**/build
+*.iml
+!**/testData/**/*.iml
+.idea/
+local.properties
+buildSrcTmp/
+distTmp/
+outTmp/
+/kotlin-native/dist
+kotlin-ide/
+# Ignore Gradle project-specific cache directory
+.gradle
+
+# Ignore Gradle build output directory
+build
