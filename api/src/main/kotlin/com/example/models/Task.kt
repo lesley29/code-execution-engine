@@ -1,8 +1,10 @@
 package com.example.models
 
+import com.example.utils.InstantSerializer
 import com.example.utils.UUIDSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.time.Instant
 import java.util.UUID
 
 enum class TargetFrameworkMonikier(val value: String) {
@@ -16,6 +18,7 @@ data class NugetPackage(
 )
 
 enum class TaskStatus {
+    Created,
     Pending,
     Executing,
     Finished
@@ -30,5 +33,7 @@ class Task (
     val arguments: List<String>? = null,
     val targetFrameworkMonikier: TargetFrameworkMonikier,
     val status: TaskStatus,
-    val nugetPackages: List<NugetPackage>? = null
+    val nugetPackages: List<NugetPackage>? = null,
+    @Serializable(with = InstantSerializer::class)
+    val createdAt: Instant
 )

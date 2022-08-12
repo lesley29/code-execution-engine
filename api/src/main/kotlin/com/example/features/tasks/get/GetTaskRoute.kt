@@ -26,6 +26,15 @@ fun Route.getTaskRoute() {
             status = HttpStatusCode.NotFound
         )
 
-        call.respond(task)
+        val taskDto = TaskDto(
+            task.id,
+            task.code,
+            task.arguments,
+            task.targetFrameworkMonikier,
+            task.status,
+            task.nugetPackages
+        )
+
+        call.respond(taskDto)
     }
 }
