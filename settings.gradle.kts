@@ -10,3 +10,4 @@
 rootProject.name = "code-execution-engine"
 
 include("api")
+include("dispatcher")
