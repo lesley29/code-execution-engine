@@ -12,3 +12,5 @@ rootProject.name = "code-execution-engine"
 include("api")
 include("dispatcher")
 include("worker")
+include("shared")
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")

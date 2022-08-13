@@ -1,7 +1,7 @@
 package com.example.features.tasks.get
 
 import com.example.data.MongoContext
-import com.example.models.Task
+import com.example.model.Task
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*

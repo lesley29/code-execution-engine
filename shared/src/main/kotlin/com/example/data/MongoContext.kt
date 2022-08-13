@@ -1,6 +1,6 @@
 package com.example.data
 
-import com.example.models.Task
+import com.example.model.Task
 import com.example.utils.UUIDCodec
 import com.mongodb.ConnectionString
 import com.mongodb.MongoClientSettings

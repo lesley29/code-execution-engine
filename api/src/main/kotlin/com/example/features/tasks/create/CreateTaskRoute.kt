@@ -1,8 +1,9 @@
 package com.example.features.tasks.create
 
 import com.example.data.MongoContext
-import com.example.models.*
-import com.mongodb.client.model.InsertOneOptions
+import com.example.model.NugetPackage
+import com.example.model.Task
+import com.example.model.TaskStatus
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -30,7 +31,7 @@ fun Route.createTaskRoute() {
             Instant.now()
         )
 
-        mongoContext.tasks.insertOne(task, InsertOneOptions())
+        mongoContext.tasks.insertOne(task)
 
         call.respond(HttpStatusCode.Created, CreateTaskResponse(task.id, task.status))
     }

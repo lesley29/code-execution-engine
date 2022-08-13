@@ -1,7 +1,7 @@
 package com.example.features.tasks.create
 
-import com.example.models.TargetFrameworkMonikier
-import com.example.models.TaskStatus
+import com.example.model.TargetFrameworkMonikier
+import com.example.model.TaskStatus
 import com.example.utils.UUIDSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
