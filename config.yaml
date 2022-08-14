@@ -1,0 +1,2 @@
+connectionStrings:
+  mongodb: "mongodb://user:password@localhost:27017"
