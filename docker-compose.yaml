@@ -8,10 +8,64 @@ services:
     ports:
       - 27017:27017
 
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.2.1
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 22181:2181
+
+  kafka:
+    image: confluentinc/cp-kafka:7.2.1
+    depends_on:
+      - zookeeper
+    ports:
+      - 29092:29092
+      - 9092:9092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://kafka:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - 8081:8080
+    depends_on:
+      - zookeeper
+      - kafka
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper0:2181
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.2.1
+    depends_on:
+      - kafka
+      - zookeeper
+    command: "bash -c 'cub zk-ready zookeeper:2181 20 && \
+                       cub kafka-ready -b kafka:9092 1 20 && \
+                       for topic in 'tasks'; do \
+                          kafka-topics --bootstrap-server kafka:9092 \
+                                       --create \
+                                       --if-not-exists \
+                                       --replication-factor 1 \
+                                       --partitions 1 \
+                                       --topic $$topic; \
+                       done'"
+
   start_dependencies:
     image: dadarek/wait-for-dependencies
     depends_on:
       - mongodb
-    command: mongodb:27017
+      - kafka-init
+      - kafka-ui
+    command: mongodb:27017 zookeeper:2181 kafka:29092
     environment:
-      - TIMEOUT_LENGTH=10
+      - TIMEOUT_LENGTH=20

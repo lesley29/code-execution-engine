@@ -6,15 +6,25 @@ import com.example.model.TaskStatus
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import mu.KotlinLogging
+import org.apache.kafka.clients.producer.KafkaProducer
+import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.clients.producer.RecordMetadata
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.litote.kmongo.and
 import org.litote.kmongo.eq
 import org.litote.kmongo.setValue
+import java.lang.Exception
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 
 
-class Job : KoinComponent {
+class DispatcherJob : KoinComponent {
     private val mongoContext by inject<MongoContext>()
+    private val producer by inject<KafkaProducer<String, Task>>()
+    private val logger = KotlinLogging.logger {}
 
     suspend fun execute() = coroutineScope {
         while (isActive) {
@@ -24,10 +34,13 @@ class Job : KoinComponent {
                 .first()
 
             if (task == null) {
-                println("No work to do, sleeping")
+                logger.info { "No work to do, sleeping" }
                 delay(1000)
             } else {
-                println("Sending task ${task.id} to Kafka")
+                logger.info { "Sending task ${task.id} to Kafka" }
+
+                val record = ProducerRecord("tasks", task.id.toString(), task)
+                producer.produce(record)
 
                 mongoContext.tasks
                     .findOneAndUpdate(
@@ -35,6 +48,16 @@ class Job : KoinComponent {
                         setValue(Task::status, TaskStatus.Pending)
                     )
             }
+        }
+    }
+}
+
+suspend fun <K, V> KafkaProducer<K, V>.produce(record: ProducerRecord<K, V>) = suspendCoroutine { cont ->
+    send(record) { metadata: RecordMetadata, exception: Exception? ->
+        if (exception != null) {
+            cont.resumeWithException(exception)
+        } else {
+            cont.resume(metadata)
         }
     }
 }
