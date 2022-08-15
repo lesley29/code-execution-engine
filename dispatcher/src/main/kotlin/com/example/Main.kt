@@ -9,7 +9,6 @@ import org.koin.core.KoinApplication
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
-import org.koin.dsl.onClose
 import sun.misc.Signal
 import java.util.*
 
@@ -31,16 +30,14 @@ fun main(args: Array<String>) = runBlocking<Unit> {
     }
 
     launch {
-        DispatcherJob().execute()
+        TaskDispatcher().run()
     }
 }
 
 fun KoinApplication.installDependencies(config: Config, producerProperties: Properties) {
     val dependencies = module {
         single { MongoContext(config.connectionStrings.mongodb) }
-        single { KafkaProducer<String, Task>(producerProperties) } onClose {
-            it?.close()
-        }
+        single { KafkaProducer<UUID, Task>(producerProperties) }
     }
 
     modules(dependencies)
