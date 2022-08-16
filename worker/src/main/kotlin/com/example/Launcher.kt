@@ -2,6 +2,8 @@ package com.example
 
 import com.example.model.Task
 import com.github.dockerjava.api.DockerClient
+import com.github.dockerjava.api.model.Capability
+import com.github.dockerjava.api.model.HostConfig
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
 import java.io.BufferedOutputStream
@@ -16,14 +18,33 @@ class Launcher(private val client: DockerClient) {
         .readAllBytes(Path.of("")) // TODO
 
     suspend fun start(task: Task) {
-
-        val result = client.buildImageCmd(prepareTar(task)).use {
+        val imageName = "task:${task.id}"
+        client.buildImageCmd(prepareTar(task)).use {
             it
                 .withBuildArg("TARGET_FRAMEWORK", "6.0")
-                .withTags(setOf("task:${task.id}"))
+                .withTags(setOf(imageName))
                 .start()
                 .awaitImageId()
         }
+
+        val createNetworkResponse = client.createNetworkCmd()
+            .withName("task:${task.id}")
+            .exec()
+
+        val memoryLimitBytes = 64 * 1024 * 1024L
+        val response = client.createContainerCmd(imageName)
+            .withHostConfig(
+                HostConfig.newHostConfig()
+                    .withCapDrop(Capability.ALL)
+                    .withMemory(memoryLimitBytes)
+                    .withCpuPeriod(100000)
+                    .withCpuQuota(10000)
+                    .withNetworkMode(createNetworkResponse.id)
+            )
+            .withCmd(task.arguments ?: listOf())
+            .exec()
+
+        client.startContainerCmd(response.id).exec()
     }
 
     private fun prepareTar(task: Task): InputStream {

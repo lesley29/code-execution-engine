@@ -18,7 +18,7 @@ class Worker(
             consumer
                 .poll(Duration.ofMillis(300))
                 .forEach {
-                    println("new task consumed! ${it.key()}")
+                    launcher.start(it.value())
                 }
         }
     }
