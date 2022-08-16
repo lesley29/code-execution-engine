@@ -24,6 +24,8 @@ dependencies {
     implementation("org.apache.kafka:kafka-clients:3.2.1")
     implementation("io.github.microutils:kotlin-logging-jvm:2.1.23")
     implementation("io.confluent:kafka-json-serializer:7.2.1")
+    implementation("com.github.docker-java:docker-java:3.2.13")
+    implementation("com.github.docker-java:docker-java-transport-zerodep:3.2.13")
     implementation(projects.shared)
 }
 

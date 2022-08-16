@@ -22,34 +22,33 @@ import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 
-class TaskDispatcher : KoinComponent {
-    private val mongoContext by inject<MongoContext>()
-    private val producer by inject<KafkaProducer<UUID, Task>>()
+class TaskDispatcher(
+    private val mongoContext: MongoContext,
+    private val producer: KafkaProducer<UUID, Task>
+) {
     private val logger = KotlinLogging.logger {}
 
     suspend fun run() = coroutineScope {
-        producer.use {
-            while (isActive) {
-                val task = mongoContext.tasks
-                    .find(Task::status eq TaskStatus.Created)
-                    .ascendingSort(Task::createdAt)
-                    .first()
+        while (isActive) {
+            val task = mongoContext.tasks
+                .find(Task::status eq TaskStatus.Created)
+                .ascendingSort(Task::createdAt)
+                .first()
 
-                if (task == null) {
-                    logger.info { "No work to do, sleeping" }
-                    delay(1000)
-                } else {
-                    logger.info { "Sending task ${task.id} to Kafka" }
+            if (task == null) {
+                logger.info { "No work to do, sleeping" }
+                delay(1000)
+            } else {
+                logger.info { "Sending task ${task.id} to Kafka" }
 
-                    val record = ProducerRecord("tasks", task.id, task)
-                    producer.produce(record)
+                val record = ProducerRecord("tasks", task.id, task)
+                producer.produce(record)
 
-                    mongoContext.tasks
-                        .findOneAndUpdate(
-                            and(Task::id eq task.id, Task::status eq TaskStatus.Created),
-                            setValue(Task::status, TaskStatus.Pending)
-                        )
-                }
+                mongoContext.tasks
+                    .findOneAndUpdate(
+                        and(Task::id eq task.id, Task::status eq TaskStatus.Created),
+                        setValue(Task::status, TaskStatus.Pending)
+                    )
             }
         }
     }
