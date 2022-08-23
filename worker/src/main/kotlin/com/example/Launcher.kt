@@ -2,34 +2,37 @@ package com.example
 
 import com.example.model.Task
 import com.github.dockerjava.api.DockerClient
+import com.github.dockerjava.api.command.BuildImageCmd
+import com.github.dockerjava.api.command.BuildImageResultCallback
 import com.github.dockerjava.api.model.Capability
 import com.github.dockerjava.api.model.HostConfig
+import kotlinx.coroutines.suspendCancellableCoroutine
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
 import java.io.BufferedOutputStream
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
-import java.nio.file.Files
-import java.nio.file.Path
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 class Launcher(private val client: DockerClient) {
-    private val imageTemplateBytes: ByteArray = Files
-        .readAllBytes(Path.of("")) // TODO
+    private val imageTemplateBytes: ByteArray = javaClass.classLoader.getResourceAsStream("template.Dockerfile").use {
+        it?.readAllBytes() ?: byteArrayOf()
+    }
 
-    suspend fun start(task: Task) {
+    suspend fun startTask(task: Task) {
         val imageName = "task:${task.id}"
         client.buildImageCmd(prepareTar(task)).use {
             it
                 .withBuildArg("TARGET_FRAMEWORK", "6.0")
                 .withTags(setOf(imageName))
-                .start()
-                .awaitImageId()
+                .execute()
         }
 
         val createNetworkResponse = client.createNetworkCmd()
             .withName("task:${task.id}")
-            .exec()
+            .execute()
 
         val memoryLimitBytes = 64 * 1024 * 1024L
         val response = client.createContainerCmd(imageName)
@@ -41,10 +44,11 @@ class Launcher(private val client: DockerClient) {
                     .withCpuQuota(10000)
                     .withNetworkMode(createNetworkResponse.id)
             )
+            .withName(task.id.toString())
             .withCmd(task.arguments ?: listOf())
-            .exec()
+            .execute()
 
-        client.startContainerCmd(response.id).exec()
+        client.startContainerCmd(response.id).execute()
     }
 
     private fun prepareTar(task: Task): InputStream {
@@ -72,4 +76,20 @@ private fun TarArchiveOutputStream.addEntry(name: String, data: ByteArray) {
     putArchiveEntry(entry)
     write(data)
     closeArchiveEntry()
+}
+
+private suspend fun BuildImageCmd.execute() = suspendCancellableCoroutine { cont ->
+    val callback = object: BuildImageResultCallback(){
+        override fun onComplete() {
+            super.onComplete()
+            cont.resume(Unit)
+        }
+
+        override fun onError(throwable: Throwable?) {
+            super.onError(throwable)
+            cont.resumeWithException(throwable!!)
+        }
+    }
+    cont.invokeOnCancellation { callback.close() }
+    exec(callback)
 }

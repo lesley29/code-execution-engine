@@ -17,7 +17,7 @@ import org.koin.dsl.onClose
 import sun.misc.Signal
 import java.util.*
 
-fun main(args: Array<String>) = runBlocking<Unit> {
+fun main(args: Array<String>) = runBlocking {
     Signal.handle(Signal("INT")) {
         this.coroutineContext.cancelChildren()
     }
@@ -42,9 +42,13 @@ fun main(args: Array<String>) = runBlocking<Unit> {
     }
 }
 
-suspend fun startApp(koinApplication: KoinApplication) = coroutineScope {
+suspend fun startApp(koinApplication: KoinApplication) = coroutineScope<Unit> {
     launch {
-        koinApplication.koin.get<Worker>().run()
+        koinApplication.koin.get<Consumer>().run()
+    }
+
+    launch {
+        koinApplication.koin.get<Watcher>().run()
     }
 }
 
@@ -64,7 +68,8 @@ fun KoinApplication.installDependencies(config: Config, consumerProperties: Prop
         single { KafkaConsumer<UUID, Task>(consumerProperties) } onClose { it?.close() }
         single { dockerClient } onClose { it?.close() }
         singleOf(::Launcher)
-        singleOf(::Worker)
+        singleOf(::Watcher)
+        singleOf(::Consumer)
     }
 
     modules(dependencies)
