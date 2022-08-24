@@ -36,5 +36,6 @@ class Task (
     val nugetPackages: List<NugetPackage>? = null,
     @Serializable(with = InstantSerializer::class)
     val createdAt: Instant,
-    val exitCode: Long? = null
+    val exitCode: Long? = null,
+    val stdOut: List<String>? = null
 )

@@ -6,9 +6,11 @@ import com.github.dockerjava.api.command.BuildImageCmd
 import com.github.dockerjava.api.command.BuildImageResultCallback
 import com.github.dockerjava.api.model.Capability
 import com.github.dockerjava.api.model.HostConfig
+import com.github.dockerjava.api.model.LogConfig
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
+import utils.execute
 import java.io.BufferedOutputStream
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -43,6 +45,7 @@ class Launcher(private val client: DockerClient) {
                     .withCpuPeriod(100000)
                     .withCpuQuota(10000)
                     .withNetworkMode(createNetworkResponse.id)
+                    .withLogConfig(LogConfig(LogConfig.LoggingType.JSON_FILE))
             )
             .withName(task.id.toString())
             .withCmd(task.arguments ?: listOf())
