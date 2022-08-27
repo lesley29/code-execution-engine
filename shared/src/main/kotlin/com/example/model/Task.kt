@@ -7,8 +7,9 @@ import kotlinx.serialization.Serializable
 import java.time.Instant
 import java.util.*
 
-enum class TargetFrameworkMonikier(val value: String) {
-    Net60("net6.0")
+@Serializable
+enum class TargetFrameworkMonikier {
+    @SerialName("net6.0") Net60
 }
 
 @Serializable
