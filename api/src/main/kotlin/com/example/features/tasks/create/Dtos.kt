@@ -1,6 +1,5 @@
 package com.example.features.tasks.create
 
-import com.example.model.TargetFrameworkMonikier
 import com.example.model.TaskStatus
 import com.example.utils.UUIDSerializer
 import kotlinx.serialization.SerialName
@@ -18,7 +17,7 @@ data class CreateTaskRequest(
     val code: String,
     val arguments: List<String>,
     @SerialName("target_framework_monikier")
-    val targetFrameworkMonikier: TargetFrameworkMonikier,
+    val targetFrameworkMonikier: String,
     @SerialName("nuget_packages")
     val nugetPackages: List<NugetPackageDto>? = null
 )

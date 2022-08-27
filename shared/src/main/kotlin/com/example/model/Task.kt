@@ -7,9 +7,10 @@ import kotlinx.serialization.Serializable
 import java.time.Instant
 import java.util.*
 
-@Serializable
-enum class TargetFrameworkMonikier {
-    @SerialName("net6.0") Net60
+object TargetFrameworkMonikier {
+    const val net60 = "net6.0"
+
+    val all = listOf(net60)
 }
 
 @Serializable
@@ -32,7 +33,7 @@ class Task (
     val id: UUID,
     val code: String,
     val arguments: List<String>? = null,
-    val targetFrameworkMonikier: TargetFrameworkMonikier,
+    val targetFrameworkMonikier: String,
     val status: TaskStatus,
     val nugetPackages: List<NugetPackage>? = null,
     @Serializable(with = InstantSerializer::class)

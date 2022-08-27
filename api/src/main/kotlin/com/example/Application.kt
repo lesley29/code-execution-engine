@@ -3,6 +3,8 @@ package com.example
 import com.example.data.MongoContext
 import com.example.plugins.configureRouting
 import com.example.plugins.configureSerialization
+import com.example.plugins.configureStatusPages
+import com.example.plugins.configureValidation
 import io.ktor.server.application.*
 import org.koin.core.KoinApplication
 import org.koin.dsl.module
@@ -14,6 +16,8 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 fun Application.module() {
     configureRouting()
     configureSerialization()
+    configureValidation()
+    configureStatusPages()
 
     install(Koin) {
         slf4jLogger()
