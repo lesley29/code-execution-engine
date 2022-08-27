@@ -4,16 +4,12 @@ import com.example.data.MongoContext
 import com.example.model.Task
 import com.example.model.TaskStatus
 import com.github.dockerjava.api.DockerClient
-import com.github.dockerjava.api.async.ResultCallback
-import com.github.dockerjava.api.command.EventsCmd
-import com.github.dockerjava.api.command.LogContainerCmd
 import com.github.dockerjava.api.model.Event
 import com.github.dockerjava.api.model.EventType
-import com.github.dockerjava.api.model.Frame
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import org.litote.kmongo.*
+import utils.asFlow
 import utils.chunked
 import java.time.Duration
 import java.util.*
@@ -70,48 +66,4 @@ class Watcher(
             )
         )
     }
-}
-
-private fun LogContainerCmd.asFlow() = callbackFlow {
-    val callback = object : ResultCallback.Adapter<Frame>() {
-        override fun onNext(frame: Frame?) {
-            frame ?: return
-            trySendBlocking(frame)
-        }
-
-        override fun onComplete() {
-            super.onComplete()
-            channel.close()
-        }
-
-        override fun onError(throwable: Throwable?) {
-            super.onError(throwable)
-            cancel(CancellationException("Docker API error", throwable))
-        }
-    }
-
-    exec(callback)
-    awaitClose { callback.close() }
-}
-
-private fun EventsCmd.asFlow() = callbackFlow {
-    val callback = object : ResultCallback.Adapter<Event>() {
-        override fun onNext(event: Event?) {
-            event ?: return
-            trySendBlocking(event)
-        }
-
-        override fun onComplete() {
-            super.onComplete()
-            channel.close()
-        }
-
-        override fun onError(throwable: Throwable?) {
-            super.onError(throwable)
-            cancel(CancellationException("Docker API error", throwable))
-        }
-    }
-
-    exec(callback)
-    awaitClose { callback.close() }
 }
