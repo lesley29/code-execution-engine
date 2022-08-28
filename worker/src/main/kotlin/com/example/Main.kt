@@ -1,7 +1,7 @@
 package com.example
 
 import com.example.data.MongoContext
-import com.example.model.Task
+import com.example.model.TaskCreatedEvent
 import com.github.dockerjava.core.DefaultDockerClientConfig
 import com.github.dockerjava.core.DockerClientImpl
 import com.github.dockerjava.zerodep.ZerodepDockerHttpClient
@@ -22,7 +22,7 @@ fun main(args: Array<String>) = runBlocking {
         this.coroutineContext.cancelChildren()
     }
 
-    val config = ConfigLoader().loadConfigOrThrow<Config>("./config.yaml")
+    val config = ConfigLoader().loadConfigOrThrow<Config>("/config.yaml")
     val consumerProperties = javaClass.classLoader.getResourceAsStream("consumer.properties").use {
         Properties().apply {
             load(it)
@@ -65,7 +65,7 @@ fun KoinApplication.installDependencies(config: Config, consumerProperties: Prop
 
     val dependencies = module {
         single { MongoContext(config.connectionStrings.mongodb) }
-        single { KafkaConsumer<UUID, Task>(consumerProperties) } onClose { it?.close() }
+        single { KafkaConsumer<UUID, TaskCreatedEvent>(consumerProperties) } onClose { it?.close() }
         single { dockerClient } onClose { it?.close() }
         singleOf(::Launcher)
         singleOf(::Watcher)

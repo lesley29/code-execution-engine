@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import org.litote.kmongo.*
 import utils.asFlow
 import utils.chunked
+import java.lang.IllegalArgumentException
 import java.time.Duration
 import java.util.*
 
@@ -33,7 +34,12 @@ class Watcher(
 
     private suspend fun startLogTracking(event: Event) {
         val taskIdString = event.actor?.attributes?.get("name") ?: return
-        val taskId = UUID.fromString(taskIdString)
+        val taskId: UUID
+        try {
+            taskId = UUID.fromString(taskIdString)
+        } catch (_ : IllegalArgumentException) {
+            return
+        }
 
         dockerClient.logContainerCmd(taskIdString)
             .withStdOut(true)
@@ -53,7 +59,12 @@ class Watcher(
     private suspend fun completeTask(event: Event) {
         val taskIdString = event.actor?.attributes?.get("name") ?: return
         val exitCode = event.actor?.attributes?.get("exitCode")?.toLong() ?: return
-        val taskId = UUID.fromString(taskIdString)
+        val taskId: UUID
+        try {
+            taskId = UUID.fromString(taskIdString)
+        } catch (_ : IllegalArgumentException) {
+            return
+        }
 
         mongoContext.tasks.findOneAndUpdate(
             and(

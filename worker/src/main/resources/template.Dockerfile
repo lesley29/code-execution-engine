@@ -3,7 +3,7 @@ FROM mcr.microsoft.com/dotnet/sdk:${TARGET_FRAMEWORK}-alpine as build-env
 
 WORKDIR /sln
 
-RUN dotnet new console -n Project -o ./ --no-restore
+RUN dotnet new console -n Project -o ./
 
 COPY ./packages.txt ./
 RUN \

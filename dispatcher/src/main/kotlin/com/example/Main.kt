@@ -1,7 +1,7 @@
 package com.example
 
 import com.example.data.MongoContext
-import com.example.model.Task
+import com.example.model.TaskCreatedEvent
 import com.sksamuel.hoplite.ConfigLoader
 import kotlinx.coroutines.*
 import org.apache.kafka.clients.producer.KafkaProducer
@@ -19,7 +19,8 @@ fun main(args: Array<String>) = runBlocking<Unit> {
         this.coroutineContext.cancelChildren()
     }
 
-    val config = ConfigLoader().loadConfigOrThrow<Config>("./config.yaml")
+    val config = ConfigLoader().loadConfigOrThrow<Config>("/config.yaml")
+
     val producerProperties = javaClass.classLoader.getResourceAsStream("producer.properties").use {
         Properties().apply {
             load(it)
@@ -48,7 +49,7 @@ suspend fun startApp(koinApplication: KoinApplication) = coroutineScope {
 fun KoinApplication.installDependencies(config: Config, producerProperties: Properties) {
     val dependencies = module {
         single { MongoContext(config.connectionStrings.mongodb) }
-        single { KafkaProducer<UUID, Task>(producerProperties) } onClose { it?.close() }
+        single { KafkaProducer<UUID, TaskCreatedEvent>(producerProperties) } onClose { it?.close() }
         singleOf(::TaskDispatcher)
     }
 

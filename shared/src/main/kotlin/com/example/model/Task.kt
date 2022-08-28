@@ -39,5 +39,15 @@ class Task (
     @Serializable(with = InstantSerializer::class)
     val createdAt: Instant,
     val exitCode: Long? = null,
-    val stdOut: List<String>? = null
+    val stdOut: List<String> = listOf()
+)
+
+@Serializable
+data class TaskCreatedEvent(
+    @Serializable(with = UUIDSerializer::class)
+    val id: UUID,
+    val code: String,
+    val arguments: List<String>? = null,
+    val targetFrameworkMonikier: String,
+    val nugetPackages: List<NugetPackage>? = null,
 )

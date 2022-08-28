@@ -2,15 +2,13 @@ package com.example
 
 import com.example.data.MongoContext
 import com.example.model.Task
+import com.example.model.TaskCreatedEvent
 import com.example.model.TaskStatus
 import com.github.dockerjava.api.DockerClient
-import com.github.dockerjava.api.command.BuildImageCmd
-import com.github.dockerjava.api.command.BuildImageResultCallback
 import com.github.dockerjava.api.exception.ConflictException
 import com.github.dockerjava.api.model.Capability
 import com.github.dockerjava.api.model.HostConfig
 import com.github.dockerjava.api.model.LogConfig
-import kotlinx.coroutines.suspendCancellableCoroutine
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
 import org.litote.kmongo.*
@@ -19,8 +17,6 @@ import java.io.BufferedOutputStream
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 class Launcher(
     private val client: DockerClient,
@@ -30,10 +26,10 @@ class Launcher(
         it?.readAllBytes() ?: byteArrayOf()
     }
 
-    suspend fun startTask(task: Task) {
+    suspend fun startTask(taskCreatedEvent: TaskCreatedEvent) {
         val updatedTask = mongoContext.tasks.findOneAndUpdate(
             and(
-                Task::id eq task.id,
+                Task::id eq taskCreatedEvent.id,
                 Task::status `in` listOf(TaskStatus.Executing, TaskStatus.Pending, TaskStatus.Created)
             ),
             set(Task::status setTo TaskStatus.Executing)
@@ -41,20 +37,20 @@ class Launcher(
 
         updatedTask ?: return
 
-        client.buildImageCmd(prepareTar(task)).use {
+        client.buildImageCmd(prepareTar(taskCreatedEvent)).use {
             it
                 .withBuildArg("TARGET_FRAMEWORK", "6.0")
-                .withTags(setOf(task.id.toString()))
+                .withTags(setOf(taskCreatedEvent.id.toString()))
                 .execute()
         }
 
         val createNetworkResponse = client.createNetworkCmd()
-            .withName(task.id.toString())
+            .withName(taskCreatedEvent.id.toString())
             .execute()
 
         val memoryLimitBytes = 64 * 1024 * 1024L
         try {
-            val createContainerResponse = client.createContainerCmd(task.id.toString())
+            val createContainerResponse = client.createContainerCmd(taskCreatedEvent.id.toString())
                 .withHostConfig(
                     HostConfig.newHostConfig()
                         .withCapDrop(Capability.ALL)
@@ -64,8 +60,8 @@ class Launcher(
                         .withNetworkMode(createNetworkResponse.id)
                         .withLogConfig(LogConfig(LogConfig.LoggingType.JSON_FILE))
                 )
-                .withName(task.id.toString())
-                .withCmd(task.arguments ?: listOf())
+                .withName(taskCreatedEvent.id.toString())
+                .withCmd(taskCreatedEvent.arguments ?: listOf())
                 .execute()
 
             client.startContainerCmd(createContainerResponse.id).execute()
@@ -74,7 +70,7 @@ class Launcher(
         }
     }
 
-    private fun prepareTar(task: Task): InputStream {
+    private fun prepareTar(task: TaskCreatedEvent): InputStream {
         val outputByteStream = ByteArrayOutputStream()
 
         TarArchiveOutputStream(BufferedOutputStream(outputByteStream)).use { tarStream ->
@@ -99,20 +95,4 @@ private fun TarArchiveOutputStream.addEntry(name: String, data: ByteArray) {
     putArchiveEntry(entry)
     write(data)
     closeArchiveEntry()
-}
-
-private suspend fun BuildImageCmd.execute() = suspendCancellableCoroutine { cont ->
-    val callback = object: BuildImageResultCallback(){
-        override fun onComplete() {
-            super.onComplete()
-            cont.resume(Unit)
-        }
-
-        override fun onError(throwable: Throwable?) {
-            super.onError(throwable)
-            cont.resumeWithException(throwable!!)
-        }
-    }
-    cont.invokeOnCancellation { callback.close() }
-    exec(callback)
 }

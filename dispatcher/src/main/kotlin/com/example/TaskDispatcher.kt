@@ -2,6 +2,7 @@ package com.example
 
 import com.example.data.MongoContext
 import com.example.model.Task
+import com.example.model.TaskCreatedEvent
 import com.example.model.TaskStatus
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -22,7 +23,7 @@ import kotlin.coroutines.suspendCoroutine
 
 class TaskDispatcher(
     private val mongoContext: MongoContext,
-    private val producer: KafkaProducer<UUID, Task>
+    private val producer: KafkaProducer<UUID, TaskCreatedEvent>
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -34,12 +35,19 @@ class TaskDispatcher(
                 .first()
 
             if (task == null) {
-                logger.info { "No work to do, sleeping" }
+                logger.debug { "No work to do, sleeping" }
                 delay(1000)
             } else {
                 logger.info { "Sending task ${task.id} to Kafka" }
 
-                val record = ProducerRecord("tasks", task.id, task)
+                val record = ProducerRecord("tasks", task.id, TaskCreatedEvent(
+                    task.id,
+                    task.code,
+                    task.arguments,
+                    task.targetFrameworkMonikier,
+                    task.nugetPackages
+                ))
+
                 producer.produce(record)
 
                 mongoContext.tasks
