@@ -1,14 +1,15 @@
 package com.example
 
 import com.example.model.TaskCreatedEvent
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 import org.apache.kafka.clients.consumer.KafkaConsumer
+import org.apache.kafka.clients.consumer.OffsetCommitCallback
 import java.time.Duration
 import java.util.*
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 
 class Consumer(
     private val consumer: KafkaConsumer<UUID, TaskCreatedEvent>,
@@ -16,19 +17,29 @@ class Consumer(
 ) {
     suspend fun run() = coroutineScope {
         consumer.subscribe(listOf("tasks"))
-        consumer
-            .asFlow()
-            .collect {
-                launcher.startTask(it.value())
+        while (true) {
+            val records = consumer.poll(Duration.ofMillis(100))
+
+            if (records.isEmpty) {
+                delay(500)
+            } else {
+                records.forEach {
+                    launcher.startTask(it.value())
+                }
+                consumer.commit()
             }
+        }
     }
 }
 
-fun <K, V> KafkaConsumer<K, V>.asFlow() = flow {
-    while (true) {
-        poll(Duration.ofMillis(300)).forEach {
-            emit(it)
+suspend fun <K, V> KafkaConsumer<K, V>.commit() = suspendCoroutine { cont ->
+    val callback = OffsetCommitCallback { _, exception ->
+        if (exception != null) {
+            cont.resumeWithException(exception)
+        } else {
+            cont.resume(Unit)
         }
-        delay(1000)
     }
-}.flowOn(Dispatchers.IO)
+
+    commitAsync(callback)
+}
