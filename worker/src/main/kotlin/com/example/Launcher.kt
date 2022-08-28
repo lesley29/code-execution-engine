@@ -1,6 +1,7 @@
 package com.example
 
 import com.example.data.MongoContext
+import com.example.model.TargetFrameworkMonikier
 import com.example.model.Task
 import com.example.model.TaskCreatedEvent
 import com.example.model.TaskStatus
@@ -26,6 +27,10 @@ class Launcher(
         it?.readAllBytes() ?: byteArrayOf()
     }
 
+    private val tfmToTag = mapOf(
+        TargetFrameworkMonikier.net60 to "6.0"
+    )
+
     suspend fun startTask(taskCreatedEvent: TaskCreatedEvent) {
         val updatedTask = mongoContext.tasks.findOneAndUpdate(
             and(
@@ -39,7 +44,7 @@ class Launcher(
 
         client.buildImageCmd(prepareTar(taskCreatedEvent)).use {
             it
-                .withBuildArg("TARGET_FRAMEWORK", "6.0")
+                .withBuildArg("TARGET_FRAMEWORK", tfmToTag[taskCreatedEvent.targetFrameworkMonikier])
                 .withTags(setOf(taskCreatedEvent.id.toString()))
                 .execute()
         }
