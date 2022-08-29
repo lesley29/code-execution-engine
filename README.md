@@ -7,7 +7,7 @@ Currently, only C# support is implemented.
 ![Main scheme](./assets/main-scheme.png)
 
 Prerequisites:
-* JVM
+* JVM 17+
 * Docker
 
 ## Run application
@@ -19,6 +19,22 @@ Prerequisites:
 
 ## Description
 
+User code runs in a fully isolated environment inside a container leveraging most of the Docker features: 
+mem & cpu limitation, without any capabilities, as a non-root user, in a separate network, etc.
+
+Engine enables near real-time running code log streaming support.
+
 The main functionality is implemented, but there is room for improvement though:
-* one
-* two
+* nuget package existence validation
+* code syntax check
+* background unused resources pruning
+* other languages support
+* metrics, monitoring and all that jazz
+* ...
+
+#### NB
+* current implementation does not impose any disk space limitations; 
+nevertheless, in a real-world production scenario it's easily achievable via `--storage-opt`
+docker run parameter. The reason why it's not added now is that it requires specific backing 
+filesystem (more on that [here](https://docs.docker.com/engine/reference/commandline/run/#set-storage-driver-options-per-container)).
+* current state & code quality - proof of concept
