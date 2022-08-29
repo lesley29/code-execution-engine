@@ -4,9 +4,7 @@ import com.example.data.MongoContext
 import com.example.model.Task
 import com.example.model.TaskCreatedEvent
 import com.example.model.TaskStatus
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import mu.KotlinLogging
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
@@ -14,8 +12,7 @@ import org.apache.kafka.clients.producer.RecordMetadata
 import org.litote.kmongo.and
 import org.litote.kmongo.eq
 import org.litote.kmongo.setValue
-import java.lang.Exception
-import java.util.UUID
+import java.util.*
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -27,8 +24,8 @@ class TaskDispatcher(
 ) {
     private val logger = KotlinLogging.logger {}
 
-    suspend fun run() = coroutineScope {
-        while (isActive) {
+    suspend fun run() {
+        while (true) {
             val task = mongoContext.tasks
                 .find(Task::status eq TaskStatus.Created)
                 .ascendingSort(Task::createdAt)

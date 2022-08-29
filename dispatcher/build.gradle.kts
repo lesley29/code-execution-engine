@@ -25,10 +25,20 @@ dependencies {
     implementation("io.github.microutils:kotlin-logging-jvm:2.1.23")
     implementation("io.confluent:kafka-json-serializer:7.2.1")
     implementation(projects.shared)
+
+    testImplementation(kotlin("test"))
+    testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
+    testImplementation("io.mockk:mockk:1.12.7")
 }
 
 tasks.compileKotlin {
     kotlinOptions {
         jvmTarget = "17"
     }
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
