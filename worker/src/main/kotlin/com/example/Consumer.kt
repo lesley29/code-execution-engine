@@ -26,12 +26,13 @@ class Consumer(
                 records.forEach {
                     launcher.startTask(it.value())
                 }
-                consumer.commit()
+                consumer.commitSync()
             }
         }
     }
 }
 
+// TODO: callback not fired
 suspend fun <K, V> KafkaConsumer<K, V>.commit() = suspendCoroutine { cont ->
     val callback = OffsetCommitCallback { _, exception ->
         if (exception != null) {

@@ -32,7 +32,9 @@ fun Route.getTaskRoute() {
             task.arguments,
             task.targetFrameworkMonikier,
             task.status,
-            task.nugetPackages
+            task.nugetPackages,
+            task.exitCode,
+            task.stdOut
         )
 
         call.respond(taskDto)
