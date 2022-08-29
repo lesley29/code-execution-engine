@@ -33,7 +33,7 @@ dependencies {
     testImplementation("io.mockk:mockk:1.12.7")
 }
 
-tasks.compileKotlin {
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     kotlinOptions {
         jvmTarget = "17"
     }
