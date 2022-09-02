@@ -27,4 +27,4 @@ COPY --from=build-env ./sln/published ./
 RUN addgroup -S worker && adduser -G worker -S worker -D -H
 USER worker
 
-ENTRYPOINT ["./Project"]
+ENTRYPOINT ["sh", "-c", "timeout -k 1 ${TIMEOUT:-5} ./Project"]
