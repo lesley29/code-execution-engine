@@ -17,4 +17,5 @@ class TaskDto (
     val nugetPackages: List<NugetPackage>? = null,
     val exitCode: Long? = null,
     val stdOut: List<String> = listOf(),
+    val stdError: List<String> = listOf(),
 )

@@ -34,7 +34,8 @@ fun Route.getTaskRoute() {
             task.status,
             task.nugetPackages,
             task.exitCode,
-            task.stdOut
+            task.stdOut,
+            task.stdError
         )
 
         call.respond(taskDto)

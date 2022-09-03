@@ -39,7 +39,8 @@ class Task (
     @Serializable(with = InstantSerializer::class)
     val createdAt: Instant,
     val exitCode: Long? = null,
-    val stdOut: List<String> = listOf()
+    val stdOut: List<String> = listOf(),
+    val stdError: List<String> = listOf()
 )
 
 @Serializable

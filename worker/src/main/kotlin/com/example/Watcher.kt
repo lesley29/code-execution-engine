@@ -6,12 +6,14 @@ import com.example.model.TaskStatus
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.model.Event
 import com.github.dockerjava.api.model.EventType
+import com.github.dockerjava.api.model.Frame
+import com.github.dockerjava.api.model.StreamType
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import org.bson.conversions.Bson
 import org.litote.kmongo.*
 import utils.asFlow
 import utils.chunked
-import java.lang.IllegalArgumentException
 import java.time.Duration
 import java.util.*
 
@@ -43,15 +45,31 @@ class Watcher(
 
         dockerClient.logContainerCmd(taskIdString)
             .withStdOut(true)
+            .withStdErr(true)
             .withFollowStream(true)
             .asFlow()
             .chunked(Duration.ofSeconds(1))
             .collect {
-                val newLogs = it.joinToString("\n") { v -> String(v.payload).trim() }
+                val stdOut = it
+                    .filter { frame -> frame.streamType == StreamType.STDOUT }
+                    .formatToString()
+
+                val stdError = it
+                    .filter { frame -> frame.streamType == StreamType.STDERR }
+                    .formatToString()
+
+                val updates = mutableListOf<Bson>()
+                if (stdOut.isNotEmpty()) {
+                    updates.add(push(Task::stdOut, stdOut))
+                }
+
+                if (stdError.isNotEmpty()) {
+                    updates.add(push(Task::stdError, stdError))
+                }
 
                 mongoContext.tasks.findOneAndUpdate(
                     Task::id eq taskId,
-                    push(Task::stdOut, newLogs)
+                    combine(updates)
                 )
             }
     }
@@ -78,3 +96,6 @@ class Watcher(
         )
     }
 }
+
+private fun Iterable<Frame>.formatToString(): String =
+    joinToString("\n") { v -> String(v.payload).trim() }
