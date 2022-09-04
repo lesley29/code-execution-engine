@@ -22,12 +22,13 @@ data class NugetPackage(
 enum class TaskStatus {
     Created,
     Pending,
+    Failed,
     Executing,
     Finished
 }
 
 @Serializable
-class Task (
+class Task(
     @Serializable(with = UUIDSerializer::class)
     @SerialName("_id")
     val id: UUID,
@@ -40,7 +41,15 @@ class Task (
     val createdAt: Instant,
     val exitCode: Long? = null,
     val stdOut: List<String> = listOf(),
-    val stdError: List<String> = listOf()
+    val stdError: List<String> = listOf(),
+    val imageBuildError: ImageBuildError? = null
+)
+
+@Serializable
+class ImageBuildError(
+    val errorDetails: String,
+    val restoreError: String? = null,
+    val buildError: String? = null
 )
 
 @Serializable

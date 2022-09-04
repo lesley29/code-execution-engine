@@ -1,10 +1,7 @@
 package com.example
 
 import com.example.data.MongoContext
-import com.example.model.TargetFrameworkMonikier
-import com.example.model.Task
-import com.example.model.TaskCreatedEvent
-import com.example.model.TaskStatus
+import com.example.model.*
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.exception.ConflictException
 import com.github.dockerjava.api.model.Capability
@@ -13,6 +10,7 @@ import com.github.dockerjava.api.model.LogConfig
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
 import org.litote.kmongo.*
+import utils.ImageBuildException
 import utils.execute
 import java.io.BufferedOutputStream
 import java.io.ByteArrayInputStream
@@ -42,11 +40,27 @@ class Launcher(
 
         updatedTask ?: return
 
-        client.buildImageCmd(prepareTar(taskCreatedEvent)).use {
-            it
+        val buildImageCommand = client.buildImageCmd(prepareTar(taskCreatedEvent))
+        try {
+            buildImageCommand
                 .withBuildArg("TARGET_FRAMEWORK", tfmToTag[taskCreatedEvent.targetFrameworkMonikier])
                 .withTags(setOf(taskCreatedEvent.id.toString()))
                 .execute()
+        } catch (exception: ImageBuildException) {
+            mongoContext.tasks.findOneAndUpdate(
+                Task::id eq taskCreatedEvent.id,
+                set(
+                    Task::status setTo TaskStatus.Failed,
+                    Task::imageBuildError setTo ImageBuildError(
+                        exception.clientError,
+                        exception.restoreError,
+                        exception.buildError
+                    )
+                )
+            )
+            return
+        } finally {
+            buildImageCommand.close()
         }
 
         val createNetworkResponse = client.createNetworkCmd()

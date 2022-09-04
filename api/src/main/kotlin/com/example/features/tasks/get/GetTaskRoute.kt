@@ -35,7 +35,8 @@ fun Route.getTaskRoute() {
             task.nugetPackages,
             task.exitCode,
             task.stdOut,
-            task.stdError
+            task.stdError,
+            task.imageBuildError?.restoreError ?: task.imageBuildError?.buildError
         )
 
         call.respond(taskDto)

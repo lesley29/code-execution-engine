@@ -5,7 +5,6 @@ import com.github.dockerjava.api.command.AsyncDockerCmd
 import com.github.dockerjava.api.command.BuildImageCmd
 import com.github.dockerjava.api.command.BuildImageResultCallback
 import com.github.dockerjava.api.command.SyncDockerCmd
-import com.github.dockerjava.api.exception.DockerClientException
 import com.github.dockerjava.api.model.BuildResponseItem
 import com.github.dockerjava.api.model.ResponseItem
 import kotlinx.coroutines.*
@@ -44,18 +43,30 @@ fun <TCommand : AsyncDockerCmd<TCommand, TResult>?, TResult> AsyncDockerCmd<TCom
 suspend fun BuildImageCmd.execute() = suspendCancellableCoroutine { cont ->
     val callback = object: BuildImageResultCallback() {
         private var imageId: String? = null
-        private var error: ResponseItem.ErrorDetail? = null
+        private var restoreError: String? = null
+        private var buildError: String? = null
+        private var clientError: ResponseItem.ErrorDetail? = null
 
         override fun onNext(item: BuildResponseItem?) {
             item ?: return
             super.onNext(item)
 
-            if (item.isBuildSuccessIndicated) {
-                imageId = item.imageId
+            val isRestoreError = item.stream?.contains("error: NU") == true
+            if (isRestoreError) {
+                restoreError = item.stream
+            }
+
+            val isBuildError = item.stream?.contains("error CS") == true
+            if (isBuildError) {
+                buildError = item.stream
             }
 
             if (item.isErrorIndicated) {
-                error = item.errorDetail
+                clientError = item.errorDetail
+            }
+
+            if (item.isBuildSuccessIndicated) {
+                imageId = item.imageId
             }
         }
 
@@ -64,7 +75,11 @@ suspend fun BuildImageCmd.execute() = suspendCancellableCoroutine { cont ->
             if (imageId != null) {
                 cont.resume(imageId)
             } else {
-                cont.resumeWithException(DockerClientException(error.toString()))
+                cont.resumeWithException(ImageBuildException(
+                    clientError!!.toString(),
+                    restoreError,
+                    buildError
+                ))
             }
         }
 
@@ -77,3 +92,9 @@ suspend fun BuildImageCmd.execute() = suspendCancellableCoroutine { cont ->
     cont.invokeOnCancellation { callback.close() }
     exec(callback)
 }
+
+class ImageBuildException(
+    val clientError: String,
+    val restoreError: String?,
+    val buildError: String?
+) : Exception(clientError)

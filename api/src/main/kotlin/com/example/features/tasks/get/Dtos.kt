@@ -18,4 +18,5 @@ class TaskDto (
     val exitCode: Long? = null,
     val stdOut: List<String> = listOf(),
     val stdError: List<String> = listOf(),
+    val error: String? = null
 )
