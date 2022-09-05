@@ -39,10 +39,12 @@ class Task(
     val nugetPackages: List<NugetPackage>? = null,
     @Serializable(with = InstantSerializer::class)
     val createdAt: Instant,
-    val exitCode: Long? = null,
+    val exitCode: Int? = null,
     val stdOut: List<String> = listOf(),
     val stdError: List<String> = listOf(),
-    val imageBuildError: ImageBuildError? = null
+    val imageBuildError: ImageBuildError? = null,
+    val taskExecutionCompleted: Boolean = false,
+    val logStreamingCompleted: Boolean = false,
 )
 
 @Serializable

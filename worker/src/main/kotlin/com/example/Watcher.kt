@@ -9,9 +9,13 @@ import com.github.dockerjava.api.model.EventType
 import com.github.dockerjava.api.model.Frame
 import com.github.dockerjava.api.model.StreamType
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch
+import org.bson.BsonDocument
 import org.bson.conversions.Bson
-import org.litote.kmongo.*
+import org.litote.kmongo.combine
+import org.litote.kmongo.eq
+import org.litote.kmongo.push
 import utils.asFlow
 import utils.chunked
 import java.time.Duration
@@ -49,6 +53,34 @@ class Watcher(
             .withFollowStream(true)
             .asFlow()
             .chunked(Duration.ofSeconds(1))
+            .onCompletion {
+                // no way to call https://www.mongodb.com/docs/manual/reference/method/db.collection.updateOne/
+                // with aggregation pipeline as second parameter given current KMongo api
+                mongoContext.tasks.aggregate<Task>(
+                    listOf(
+                        BsonDocument.parse(
+                            "{ " +
+                                "\$match: {" +
+                                    "\$and: [" +
+                                        "{ _id: '$taskId' }, " +
+                                        "{ status: { \$in: ['${TaskStatus.Executing}', '${TaskStatus.Pending}', '${TaskStatus.Created}'] } }" +
+                                    "] " +
+                                "}" +
+                            "}"),
+                        BsonDocument.parse(
+                            "{" +
+                                "    \$set: {" +
+                                "      status: {" +
+                                "        \$cond: [ { \$eq: [ '\$taskExecutionCompleted', true ] }, '${TaskStatus.Finished}', '\$status']" +
+                                "      }," +
+                                "      logStreamingCompleted: true" +
+                                "    }" +
+                                "  }"
+                        ),
+                        BsonDocument.parse("{ \$merge: {into: 'task'}}")
+                    )
+                ).toCollection()
+            }
             .collect {
                 val stdOut = it
                     .filter { frame -> frame.streamType == StreamType.STDOUT }
@@ -84,16 +116,33 @@ class Watcher(
             return
         }
 
-        mongoContext.tasks.findOneAndUpdate(
-            and(
-                Task::id eq taskId,
-                Task::status `in` listOf(TaskStatus.Executing, TaskStatus.Pending, TaskStatus.Created)
-            ),
-            set(
-                Task::status setTo TaskStatus.Finished,
-                Task::exitCode setTo exitCode
+        // no way to call https://www.mongodb.com/docs/manual/reference/method/db.collection.updateOne/
+        // with aggregation pipeline as second parameter given current KMongo api
+        mongoContext.tasks.aggregate<Task>(
+            listOf(
+                BsonDocument.parse(
+                    "{ " +
+                            "\$match: {" +
+                                "\$and: [" +
+                                    "{ _id: '$taskId' }, " +
+                                    "{ status: { \$in: ['${TaskStatus.Executing}', '${TaskStatus.Pending}', '${TaskStatus.Created}'] } }" +
+                                "] " +
+                            "}" +
+                    "}"),
+                BsonDocument.parse(
+                    "{" +
+                            "    \$set: {" +
+                            "      status: {" +
+                            "        \$cond: [ { \$eq: [ '\$logStreamingCompleted', true ] }, '${TaskStatus.Finished}', '\$status']" +
+                            "      }," +
+                            "      taskExecutionCompleted: true," +
+                            "      exitCode: $exitCode" +
+                            "    }" +
+                            "  }"
+                ),
+                BsonDocument.parse("{ \$merge: {into: 'task'}}")
             )
-        )
+        ).toCollection()
     }
 }
 
