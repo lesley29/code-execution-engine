@@ -25,6 +25,10 @@ class Launcher(
         it?.readAllBytes() ?: byteArrayOf()
     }
 
+    private val entrypointBytes: ByteArray = javaClass.classLoader.getResourceAsStream("entrypoint.sh").use {
+        it?.readAllBytes() ?: byteArrayOf()
+    }
+
     private val tfmToTag = mapOf(
         TargetFrameworkMonikier.net60 to "6.0"
     )
@@ -100,6 +104,7 @@ class Launcher(
             tarStream.addEntry("packages.txt", packages ?: byteArrayOf())
             tarStream.addEntry("Program.cs", task.code.toByteArray())
             tarStream.addEntry("Dockerfile", imageTemplateBytes)
+            tarStream.addEntry("entrypoint.sh", entrypointBytes)
 
             tarStream.finish()
         }

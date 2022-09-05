@@ -24,7 +24,10 @@ WORKDIR /app
 
 COPY --from=build-env ./sln/published ./
 
+COPY ./entrypoint.sh ./
+RUN chmod +x ./entrypoint.sh
+
 RUN addgroup -S worker && adduser -G worker -S worker -D -H
 USER worker
 
-ENTRYPOINT ["sh", "-c", "timeout -k 1 ${TIMEOUT:-5} ./Project"]
+ENTRYPOINT ["./entrypoint.sh"]

@@ -15,7 +15,7 @@ data class NugetPackageDto(
 @Serializable
 data class CreateTaskRequest(
     val code: String,
-    val arguments: List<String>,
+    val arguments: List<String>? = null,
     @SerialName("target_framework_monikier")
     val targetFrameworkMonikier: String,
     @SerialName("nuget_packages")

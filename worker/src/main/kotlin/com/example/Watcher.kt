@@ -92,11 +92,11 @@ class Watcher(
 
                 val updates = mutableListOf<Bson>()
                 if (stdOut.isNotEmpty()) {
-                    updates.add(push(Task::stdOut, stdOut))
+                    updates.add(push(Task::stdout, stdOut))
                 }
 
                 if (stdError.isNotEmpty()) {
-                    updates.add(push(Task::stdError, stdError))
+                    updates.add(push(Task::stderr, stdError))
                 }
 
                 mongoContext.tasks.findOneAndUpdate(

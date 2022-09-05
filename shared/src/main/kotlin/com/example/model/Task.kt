@@ -40,8 +40,8 @@ class Task(
     @Serializable(with = InstantSerializer::class)
     val createdAt: Instant,
     val exitCode: Int? = null,
-    val stdOut: List<String> = listOf(),
-    val stdError: List<String> = listOf(),
+    val stdout: List<String> = listOf(),
+    val stderr: List<String> = listOf(),
     val imageBuildError: ImageBuildError? = null,
     val taskExecutionCompleted: Boolean = false,
     val logStreamingCompleted: Boolean = false,

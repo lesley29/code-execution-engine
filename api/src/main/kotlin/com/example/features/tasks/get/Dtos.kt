@@ -15,8 +15,8 @@ class TaskDto (
     val targetFrameworkMonikier: String,
     val status: TaskStatus,
     val nugetPackages: List<NugetPackage>? = null,
-    val exitCode: Long? = null,
-    val stdOut: List<String> = listOf(),
-    val stdError: List<String> = listOf(),
+    val exitCode: Int? = null,
+    val stdout: List<String> = listOf(),
+    val stderr: List<String> = listOf(),
     val error: String? = null
 )
