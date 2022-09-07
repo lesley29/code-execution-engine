@@ -9,6 +9,7 @@ Currently, only C# support is implemented.
 Prerequisites:
 * JVM 17+
 * Docker
+* Node (some tests are written in JS :))
 
 ## Run application
 
@@ -16,6 +17,10 @@ Prerequisites:
 * `./gradlew :dispatcher:run` - run dispatcher instance
 * `./gradlew :worker:run` - run worker instance
 * `./gradlew :api:run` - run api instance
+
+## Run tests
+
+`npm run test` - run whole system integration tests (app must be running)
 
 ## Usage example
 
@@ -61,8 +66,6 @@ Engine enables near real-time running code log streaming support.
 
 The main functionality is implemented, but there is room for improvement though:
 * cover everything with tests
-* nuget package existence validation
-* code syntax check
 * background unused resources pruning
 * other languages support
 * metrics, monitoring and all that jazz
