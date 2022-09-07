@@ -2,13 +2,13 @@
   "name": "system-integration-tests",
   "private": true,
   "scripts": {
-    "test": "jest"
+    "test": "./testing/preload-images.sh && jest"
   },
   "jest": {
     "testMatch": [
       "**/*.tests.js"
     ],
-    "testTimeout": 10000
+    "testTimeout": 15000
   },
   "dependencies": {
     "axios": "^0.27.2",
