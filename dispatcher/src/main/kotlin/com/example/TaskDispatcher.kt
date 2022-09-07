@@ -32,10 +32,10 @@ class TaskDispatcher(
                 .first()
 
             if (task == null) {
-                logger.debug { "No work to do, sleeping" }
+                logger.debug { "No tasks to dispatch, sleeping" }
                 delay(1000)
             } else {
-                logger.info { "Sending task ${task.id} to Kafka" }
+                logger.info { "Dispatching task ${task.id} to workers" }
 
                 val record = ProducerRecord("tasks", task.id, TaskCreatedEvent(
                     task.id,
@@ -52,6 +52,8 @@ class TaskDispatcher(
                         and(Task::id eq task.id, Task::status eq TaskStatus.Created),
                         setValue(Task::status, TaskStatus.Pending)
                     )
+
+                logger.info { "Task ${task.id} has been dispatched" }
             }
         }
     }

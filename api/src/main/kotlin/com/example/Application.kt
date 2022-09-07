@@ -1,10 +1,7 @@
 package com.example
 
 import com.example.data.MongoContext
-import com.example.plugins.configureRouting
-import com.example.plugins.configureSerialization
-import com.example.plugins.configureStatusPages
-import com.example.plugins.configureValidation
+import com.example.plugins.*
 import io.ktor.server.application.*
 import org.koin.core.KoinApplication
 import org.koin.dsl.module
@@ -18,6 +15,7 @@ fun Application.module() {
     configureSerialization()
     configureValidation()
     configureStatusPages()
+    configureLogging()
 
     install(Koin) {
         slf4jLogger()

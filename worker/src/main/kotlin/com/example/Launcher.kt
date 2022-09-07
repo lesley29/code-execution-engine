@@ -7,6 +7,7 @@ import com.github.dockerjava.api.exception.ConflictException
 import com.github.dockerjava.api.model.Capability
 import com.github.dockerjava.api.model.HostConfig
 import com.github.dockerjava.api.model.LogConfig
+import mu.KotlinLogging
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
 import org.litote.kmongo.*
@@ -21,6 +22,8 @@ class Launcher(
     private val client: DockerClient,
     private val mongoContext: MongoContext
 ) {
+    private val logger = KotlinLogging.logger {}
+
     private val imageTemplateBytes: ByteArray = javaClass.classLoader.getResourceAsStream("template.Dockerfile").use {
         it?.readAllBytes() ?: byteArrayOf()
     }
@@ -42,7 +45,10 @@ class Launcher(
             set(Task::status setTo TaskStatus.Executing)
         )
 
-        updatedTask ?: return
+        if (updatedTask == null) {
+            logger.debug { "No such task with id ${taskCreatedEvent.id} or it has already been completed" }
+            return
+        }
 
         val buildImageCommand = client.buildImageCmd(prepareTar(taskCreatedEvent))
         try {
@@ -62,9 +68,11 @@ class Launcher(
                     )
                 )
             )
+            logger.info { "unable to build image for task ${taskCreatedEvent.id} $exception" }
             return
         } finally {
             buildImageCommand.close()
+            logger.debug { "image for task ${taskCreatedEvent.id} has been successfully built" }
         }
 
         val createNetworkResponse = client.createNetworkCmd()
@@ -88,8 +96,9 @@ class Launcher(
                 .execute()
 
             client.startContainerCmd(createContainerResponse.id).execute()
+            logger.debug { "Container for task ${taskCreatedEvent.id} has been successfully started" }
         } catch (conflict: ConflictException) {
-            println("Container with the same name already exists, do nothing")
+            logger.debug { "Container for task ${taskCreatedEvent.id} already exists, do nothing" }
         }
     }
 

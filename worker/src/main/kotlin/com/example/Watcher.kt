@@ -11,6 +11,7 @@ import com.github.dockerjava.api.model.StreamType
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch
+import mu.KotlinLogging
 import org.bson.BsonDocument
 import org.bson.conversions.Bson
 import org.litote.kmongo.combine
@@ -25,17 +26,25 @@ class Watcher(
     private val dockerClient: DockerClient,
     private val mongoContext: MongoContext,
 ) {
+    private val logger = KotlinLogging.logger {}
+
     suspend fun run() = coroutineScope {
-        dockerClient.eventsCmd()
-            .withEventTypeFilter(EventType.CONTAINER)
-            .withEventFilter("start", "stop", "die")
-            .asFlow()
-            .collect { event ->
-                when (event.action) {
-                    "start" -> launch { startLogTracking(event) }
-                    "stop", "die" -> completeTask(event)
+        logger.info { "Start watching for docker container events" }
+        try {
+            dockerClient.eventsCmd()
+                .withEventTypeFilter(EventType.CONTAINER)
+                .withEventFilter("start", "stop", "die")
+                .asFlow()
+                .collect { event ->
+                    logger.info { "Received docker container ${event.action} event" }
+                    when (event.action) {
+                        "start" -> launch { startLogTracking(event) }
+                        "stop", "die" -> completeTask(event)
+                    }
                 }
-            }
+        } finally {
+            logger.info { "Stop watching for docker container events" }
+        }
     }
 
     private suspend fun startLogTracking(event: Event) {
@@ -80,6 +89,8 @@ class Watcher(
                         BsonDocument.parse("{ \$merge: {into: 'task'}}")
                     )
                 ).toCollection()
+
+                logger.info { "Task $taskIdString log streaming has been completed" }
             }
             .collect {
                 val stdOut = it
@@ -143,6 +154,8 @@ class Watcher(
                 BsonDocument.parse("{ \$merge: {into: 'task'}}")
             )
         ).toCollection()
+
+        logger.info { "Task $taskIdString execution has been completed" }
     }
 }
 

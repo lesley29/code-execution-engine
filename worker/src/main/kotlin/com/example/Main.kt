@@ -7,6 +7,7 @@ import com.github.dockerjava.core.DockerClientImpl
 import com.github.dockerjava.zerodep.ZerodepDockerHttpClient
 import com.sksamuel.hoplite.ConfigLoader
 import kotlinx.coroutines.*
+import mu.KotlinLogging
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.koin.core.KoinApplication
 import org.koin.core.context.startKoin
@@ -17,11 +18,14 @@ import org.koin.dsl.onClose
 import sun.misc.Signal
 import java.util.*
 
+private val logger = KotlinLogging.logger {}
 fun main(args: Array<String>) = runBlocking {
     Signal.handle(Signal("INT")) {
         this.coroutineContext.cancelChildren()
     }
 
+    logger.info { "Starting worker" }
+    
     val config = ConfigLoader().loadConfigOrThrow<Config>("/config.yaml")
     val consumerProperties = javaClass.classLoader.getResourceAsStream("consumer.properties").use {
         Properties().apply {
@@ -37,6 +41,9 @@ fun main(args: Array<String>) = runBlocking {
         startApp(koinApplication)
     }
     catch (_: CancellationException){}
+    catch (exception: Throwable) {
+        logger.error(exception) { "Worker exited unexpectedly" }
+    }
     finally {
         stopKoin()
     }
