@@ -50,6 +50,15 @@ class Launcher(
             return
         }
 
+        try {
+            prepareEnvironmentAndStartContainer(taskCreatedEvent)
+        }
+        catch (exception: Throwable) {
+            logger.error(exception) { "Something went wrong during task start" }
+        }
+    }
+
+    private suspend fun prepareEnvironmentAndStartContainer(taskCreatedEvent: TaskCreatedEvent) {
         val buildImageCommand = client.buildImageCmd(prepareTar(taskCreatedEvent))
         try {
             buildImageCommand
