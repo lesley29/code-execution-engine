@@ -8,13 +8,19 @@ import io.ktor.server.plugins.requestvalidation.*
 fun Application.configureValidation() {
     install(RequestValidation) {
         validate<CreateTaskRequest> { request ->
-            if (request.code.isEmpty()) {
+            if (request.code.isBlank()) {
                 return@validate ValidationResult.Invalid("Task must contain some code")
             }
 
             if (!TargetFrameworkMonikier.all.contains(request.targetFrameworkMonikier)) {
                 return@validate ValidationResult.Invalid(
                     "tfm must be one of the following values: [${TargetFrameworkMonikier.all.joinToString()}]")
+            }
+
+            if (request.nugetPackages?.size == 0) {
+                return@validate ValidationResult.Invalid(
+                    "package list must not be empty"
+                )
             }
 
             request.nugetPackages?.forEach { packageDto ->
